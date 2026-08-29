@@ -8,8 +8,8 @@
   <script>document.documentElement.dataset.kasaTheme = localStorage.getItem("kasaflow_theme") || "pembe-seker";</script>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/logo.png" />
-  <link rel="stylesheet" href="/cashier-themes.css?v=1.0.0" />
-  <link rel="stylesheet" href="/style.css?v=1.0.0" />
+  <link rel="stylesheet" href="/cashier-themes.css?v=1.1.0" />
+  <link rel="stylesheet" href="/style.css?v=1.1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
         <button class="module-button" data-view="ayarlar"><span>🎨</span><b>Ayarlar</b></button>
       </nav>
 
-      <div class="sidebar-footer"><span>KasaFlow V1.0.0</span><small>Garage İstanbul · SchEAx & GPT</small></div>
+      <div class="sidebar-footer"><span>KasaFlow V1.1.0</span><small>Garage İstanbul · SchEAx & GPT</small></div>
     </aside>
 
     <main class="workspace">
@@ -69,6 +69,16 @@
       </section>
 
       <section id="settingsView" class="settings-view hidden">
+        <section id="staffManagementPanel" class="staff-management-panel hidden">
+          <div class="staff-management-header">
+            <div><p class="eyebrow">PERSONEL & MODÜL YETKİLERİ</p><h2>Personel Kayıt Merkezi</h2><p>Yeni giriş hesabı oluştur; her personele görebileceği KasaFlow sekmelerini ayrı ayrı ver.</p></div>
+            <div class="staff-header-actions"><button id="reloadStaffManagementBtn" type="button" class="settings-button secondary">↻ Yenile</button><button id="addStaffManagementBtn" type="button" class="settings-button">＋ Personel Ekle</button></div>
+          </div>
+          <div id="staffManagementMessage" class="staff-management-message hidden" role="status" aria-live="polite"></div>
+          <div id="staffManagementList" class="staff-management-list"><p class="staff-empty">Personeller yükleniyor…</p></div>
+          <div class="staff-save-bar"><p>Personeli pasife almak geçmiş stok ve araç kayıtlarını silmez.</p><button id="saveStaffManagementBtn" type="button" class="settings-button save">Personelleri Kaydet</button></div>
+        </section>
+
         <div class="settings-hero">
           <div><p class="eyebrow">RENKLERİ SEN SEÇ 🌈</p><h2>KasaFlow’un havasını değiştir</h2><p>Seçtiğin tema menüye, araç kabul ekranlarına ve Avans & Maaş bölümüne birlikte uygulanır.</p></div>
           <div class="settings-mark">✨</div>
@@ -87,8 +97,7 @@
   </div>
 
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script src="/app.js?v=1.0.0"></script>
-  <script src="/payroll-reminder.js?v=1.0.0"></script>
+  <script src="/app.js?v=1.1.0"></script>
+  <script src="/payroll-reminder.js?v=1.1.0"></script>
 </body>
 </html>
-

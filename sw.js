@@ -1,5 +1,5 @@
-const CACHE_NAME = "kasaflow-shell-v1-0-0";
-const SHELL_ASSETS = ["/", "/index.html", "/style.css?v=1.0.0", "/cashier-themes.css?v=1.0.0", "/app.js?v=1.0.0", "/payroll-reminder.js?v=1.0.0", "/manifest.webmanifest", "/logo.png", "/icons/icon-192.png", "/icons/icon-512.png"];
+const CACHE_NAME = "kasaflow-shell-v1-1-0";
+const SHELL_ASSETS = ["/", "/index.html", "/style.css?v=1.1.0", "/cashier-themes.css?v=1.1.0", "/app.js?v=1.1.0", "/payroll-reminder.js?v=1.1.0", "/manifest.webmanifest", "/logo.png", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith("kasaflow-shell-") && key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => self.clients.claim())));

@@ -49,8 +49,9 @@
     const alert = document.getElementById("salaryAlert");
     const alertText = document.getElementById("salaryAlertText");
     const badge = document.getElementById("salaryNavBadge");
-    alert?.classList.toggle("hidden", due.length === 0);
-    badge?.classList.toggle("hidden", due.length === 0);
+    const payrollAllowed = window.KasaFlow?.canOpenView?.("avans-maas") !== false;
+    alert?.classList.toggle("hidden", due.length === 0 || !payrollAllowed);
+    badge?.classList.toggle("hidden", due.length === 0 || !payrollAllowed);
     if (badge) badge.textContent = String(due.length);
     if (alertText && due.length) {
       alertText.textContent = `Bu personel/personellerin maaşı var: ${uniquePeople.map((person) => person.name).join(", ")}. “Maaşı Yattı” denene kadar uyarı kapanmaz.`;
@@ -60,7 +61,7 @@
     const notificationEnabled = localStorage.getItem("kasaflow_salary_notifications") === "1" || localStorage.getItem("garageflow_salary_notifications") === "1";
     const sentKey = `kasaflow_salary_notification_${iso(new Date())}`;
     const canNotify = forceNotification || (hour >= 9 && hour < 10 && notificationEnabled && localStorage.getItem(sentKey) !== "1");
-    if (due.length && canNotify && "Notification" in window && Notification.permission === "granted") {
+    if (due.length && payrollAllowed && canNotify && "Notification" in window && Notification.permission === "granted") {
       const body = `Bu personel/personellerin maaşı var: ${uniquePeople.map((person) => person.name).join(", ")}`;
       try {
         const registration = await navigator.serviceWorker?.ready;
