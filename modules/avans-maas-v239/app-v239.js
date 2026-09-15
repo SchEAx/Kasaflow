@@ -1,3 +1,4 @@
+console.info("[KasaFlow Payroll] PostgreSQL API build 2.3.9");
 const MIGRATION_API_BASE = "https://api.scheax.com.tr/migration-test";
 const MIGRATION_TOKEN_KEY = "garage_migration_test_jwt_v1";
 
@@ -45,10 +46,38 @@ const money = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY
 const $ = (id) => document.getElementById(id);
 const pad = (value) => String(value).padStart(2, "0");
 const localISO = (date = new Date()) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+function dateOnly(value) {
+  const match = String(value || "").trim().match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : "";
+}
 const todayISO = localISO();
 const currentMonth = todayISO.slice(0, 7);
 let state = { people: [], advances: [], deductions: [], salaryPayments: [], salaryTableReady: true, selectedPersonId: "", editingPersonId: "" };
 let payrollActionLock = { advance: false, salary: false };
+let activePayrollNotification = null;
+
+async function closeModulePayrollNotifications() {
+  try {
+    if (activePayrollNotification?.close) activePayrollNotification.close();
+  } catch (_) {}
+  activePayrollNotification = null;
+
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        if (typeof reg.getNotifications !== "function") continue;
+        const notifications = await reg.getNotifications();
+        notifications.forEach((notification) => {
+          if (["kasaflow-salary", "kasaflow-payroll"].includes(String(notification.tag || ""))) {
+            notification.close();
+          }
+        });
+      }
+    }
+  } catch (_) {}
+}
+
 
 function showToast(text) { const toast = $("toast"); toast.textContent = text; toast.classList.add("show"); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove("show"), 3200); }
 function parseNum(value) { return Math.max(0, Number(String(value || "").replace(",", ".")) || 0); }
@@ -65,7 +94,7 @@ function formatDate(value) { if (!value) return "-"; const [year, month, day] = 
 function summaryHTML(items) { return items.map(([label, value, type]) => `<div class="summary ${type || ""}"><span>${label}</span><b>${type === "count" ? (value || 0) : money.format(value || 0)}</b></div>`).join(""); }
 
 function dueDatesFor(person, today = new Date()) {
-  const startText = person.salary_tracking_start || todayISO;
+  const startText = dateOnly(person.salary_tracking_start) || todayISO;
   const start = new Date(`${startText}T12:00:00`);
   const end = new Date(today); end.setHours(23, 59, 59, 999);
   const result = [];
@@ -92,7 +121,7 @@ function paymentFor(personId, period) {
   return state.salaryPayments.find((row) => {
     if (String(row.person_id) !== String(personId)) return false;
     return weekly
-      ? String(row.pay_period).slice(0, 10) === String(period).slice(0, 10)
+      ? dateOnly(row.pay_period) === dateOnly(period)
       : monthOf(row.pay_period) === monthOf(period);
   });
 }
@@ -110,11 +139,20 @@ async function loadAll({ quiet = false, preservePerson = true } = {}) {
 
   try {
     const payload = await apiFetch("/api/kasaflow/payroll");
-    state.people = payload.people || [];
-    state.advances = payload.advances || [];
+    state.people = (payload.people || []).map((person) => ({
+      ...person,
+      salary_tracking_start: dateOnly(person.salary_tracking_start)
+    }));
+    state.advances = (payload.advances || []).map((advance) => ({
+      ...advance,
+      advance_date: dateOnly(advance.advance_date)
+    }));
     state.deductions = payload.deductions || [];
     state.salaryTableReady = true;
-    state.salaryPayments = payload.salary_payments || [];
+    state.salaryPayments = (payload.salary_payments || []).map((payment) => ({
+      ...payment,
+      pay_period: dateOnly(payment.pay_period)
+    }));
     state.selectedPersonId = state.people.some((person) => String(person.id) === String(selectedBefore)) ? selectedBefore : (state.people.find((person) => person.is_active !== false)?.id || state.people[0]?.id || "");
     renderAll();
     scheduleSalaryReminder(false);
@@ -292,8 +330,16 @@ Maaş yatırıldı olarak işaretlensin mi?`)) return;
       }
     });
     await loadAll({ quiet: true });
-    showToast(`${person.name} için maaş yatırıldı olarak kaydedildi.`);
-    try { window.parent.postMessage({ type: "garageflow:toast", message: `${person.name} maaşı ödendi olarak kaydedildi.` }, location.origin); } catch (_) {}
+    await closeModulePayrollNotifications();
+    const successMessage = `${person.name} maaşı ödendi olarak kaydedildi.`;
+    // Embed modunda hem iframe hem ana KasaFlow toast gösterince iki kutu üst üste çıkıyordu.
+    // Artık yalnızca tek yerde gösteriyoruz.
+    if (window.parent !== window) {
+      try { window.parent.postMessage({ type: "garageflow:toast", message: successMessage }, location.origin); } catch (_) {}
+      try { window.parent.postMessage({ type: "garageflow:payroll-payment-saved", personId: person.id, period }, location.origin); } catch (_) {}
+    } else {
+      showToast(successMessage);
+    }
   } catch (error) {
     showToast(`Maaş kaydedilemedi: ${error.message || "API hatası"}`);
   } finally {
@@ -308,7 +354,7 @@ function resetPersonForm() {
 
 function editPerson(id) {
   const person = getPerson(id); if (!person) return;
-  state.editingPersonId = person.id; $("personName").value = person.name || ""; $("personSalary").value = person.salary || 0; $("personPayType").value = person.pay_type || "monthly"; $("personSalaryDay").value = String(person.salary_day || 1); $("personSalaryWeekday").value = String(person.salary_weekday ?? 1); $("personTrackingStart").value = person.salary_tracking_start || todayISO; $("personActive").checked = person.is_active !== false; $("cancelPersonEditBtn").classList.remove("hidden"); $("savePersonBtn").textContent = "Değişiklikleri Kaydet"; togglePayFields(); window.scrollTo({ top: 0, behavior: "smooth" });
+  state.editingPersonId = person.id; $("personName").value = person.name || ""; $("personSalary").value = person.salary || 0; $("personPayType").value = person.pay_type || "monthly"; $("personSalaryDay").value = String(person.salary_day || 1); $("personSalaryWeekday").value = String(person.salary_weekday ?? 1); $("personTrackingStart").value = dateOnly(person.salary_tracking_start) || todayISO; $("personActive").checked = person.is_active !== false; $("cancelPersonEditBtn").classList.remove("hidden"); $("savePersonBtn").textContent = "Değişiklikleri Kaydet"; togglePayFields(); window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function savePerson() {
@@ -369,7 +415,7 @@ async function scheduleSalaryReminder(force = false) {
   try {
     const registration = await navigator.serviceWorker?.getRegistration?.();
     if (registration?.showNotification) await registration.showNotification("KasaFlow Maaş Hatırlatması", { body, icon: "/logo.png", badge: "/logo.png", tag: "kasaflow-payroll" });
-    else new Notification("KasaFlow Maaş Hatırlatması", { body, icon: "/logo.png" });
+    else activePayrollNotification = new Notification("KasaFlow Maaş Hatırlatması", { body, icon: "/logo.png" });
     localStorage.setItem(key, "1");
   } catch (error) { console.warn(error); }
 }
@@ -385,5 +431,4 @@ function bind() {
   togglePayFields(); setInterval(() => scheduleSalaryReminder(false), 5 * 60 * 1000);
 }
 
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=8").catch(console.warn));
 bind(); resetPersonForm(); loadAll();

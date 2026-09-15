@@ -11,6 +11,10 @@ function usernameSlug(value) {
     .replace(/[^a-z0-9._-]+/g, ".").replace(/^\.+|\.+$/g, "");
 }
 
+function normalizedName(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLocaleLowerCase("tr-TR");
+}
+
 function send(res, status, payload) {
   res.status(status).json(payload);
 }
@@ -110,6 +114,8 @@ export default async function handler(req, res) {
 
     const duplicate = staff.find((item, index, list) => list.findIndex((other) => other.username === item.username) !== index);
     if (duplicate) return send(res, 400, { ok: false, message: `Aynı kullanıcı adı birden fazla kullanılamaz: ${duplicate.username}` });
+    const duplicateName = staff.find((item, index, list) => list.findIndex((other) => normalizedName(other.name) === normalizedName(item.name)) !== index);
+    if (duplicateName) return send(res, 400, { ok: false, message: `Aynı personel adı birden fazla kullanılamaz: ${duplicateName.name}` });
 
     const { data: existingProfiles, error: profileError } = await adminClient
       .from("app_users")
@@ -119,15 +125,27 @@ export default async function handler(req, res) {
     const { data: authList, error: listError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) throw listError;
     const authByEmail = new Map((authList?.users || []).map((user) => [String(user.email || "").toLowerCase(), user]));
+    const authById = new Map((authList?.users || []).map((user) => [String(user.id), user]));
     const profileById = new Map((existingProfiles || []).map((profile) => [String(profile.auth_user_id), profile]));
     const result = [];
 
     for (const item of staff) {
       let authUserId = item.authUserId;
-      const matchingProfile = (existingProfiles || []).find((profile) =>
-        String(profile.username || "").toLowerCase() === item.username.toLowerCase()
-      );
+      const matchingProfile =
+        (authUserId ? profileById.get(String(authUserId)) : null) ||
+        (existingProfiles || []).find((profile) =>
+          String(profile.username || "").toLowerCase() === item.username.toLowerCase() ||
+          normalizedName(profile.name) === normalizedName(item.name)
+        );
       if (!authUserId) authUserId = matchingProfile?.auth_user_id || authByEmail.get(item.email.toLowerCase())?.id || null;
+
+      // Eski stok sürümlerinden kalmış app_users satırı Auth tarafında yoksa,
+      // yeni Auth hesabını oluşturup aynı profil satırını yeni kimliğe bağla.
+      let orphanProfileId = null;
+      if (authUserId && !authById.has(String(authUserId))) {
+        orphanProfileId = matchingProfile?.auth_user_id || authUserId;
+        authUserId = authByEmail.get(item.email.toLowerCase())?.id || null;
+      }
 
       if (!authUserId) {
         if (item.password.length < 4) throw new Error(`${item.name} için en az 4 karakterli şifre gir.`);
@@ -140,6 +158,8 @@ export default async function handler(req, res) {
         if (createError) throw new Error(`${item.name} oluşturulamadı: ${createError.message}`);
         authUserId = created.user.id;
         createdAuthIds.push(authUserId);
+        authById.set(String(authUserId), created.user);
+        authByEmail.set(item.email.toLowerCase(), created.user);
       } else {
         const authChanges = {
           email: item.email,
@@ -153,7 +173,7 @@ export default async function handler(req, res) {
         if (updateAuthError) throw new Error(`${item.name} hesabı güncellenemedi: ${updateAuthError.message}`);
       }
 
-      const oldProfile = profileById.get(String(authUserId));
+      const oldProfile = matchingProfile || profileById.get(String(authUserId));
       const profilePayload = {
         auth_user_id: authUserId,
         username: item.username,
@@ -163,8 +183,18 @@ export default async function handler(req, res) {
         permissions: item.permissions,
         is_active: true
       };
-      const { error: upsertError } = await adminClient.from("app_users").upsert(profilePayload, { onConflict: "auth_user_id" });
-      if (upsertError) throw new Error(`${item.name} profili kaydedilemedi: ${upsertError.message}`);
+      let profileWriteError = null;
+      if (orphanProfileId && String(orphanProfileId) !== String(authUserId)) {
+        const { error } = await adminClient
+          .from("app_users")
+          .update(profilePayload)
+          .eq("auth_user_id", orphanProfileId);
+        profileWriteError = error;
+      } else {
+        const { error } = await adminClient.from("app_users").upsert(profilePayload, { onConflict: "auth_user_id" });
+        profileWriteError = error;
+      }
+      if (profileWriteError) throw new Error(`${item.name} profili kaydedilemedi: ${profileWriteError.message}`);
 
       result.push({
         ...profilePayload,
