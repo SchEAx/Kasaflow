@@ -1,4 +1,4 @@
 {
-  "version": "2.3.9",
-  "build": "KASAFLOW-MIGRATION-TEST-PAYROLL-NOTIFY-UPDATE-FIX"
+  "version": "2.3.11",
+  "build": "KASAFLOW-PAYROLL-COMMIT-GUARD-FIX"
 }
