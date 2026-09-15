@@ -2,7 +2,7 @@ const MIGRATION_TEST_MODE = true;
 const MIGRATION_API_BASE = "https://api.scheax.com.tr/migration-test";
 const MIGRATION_TOKEN_KEY = "garage_migration_test_jwt_v1";
 
-const KASAFLOW_APP_VERSION = "2.3.13";
+const KASAFLOW_APP_VERSION = "2.3.14";
 const KASAFLOW_VERSION_KEY = "kasaflow_app_version";
 
 
@@ -20,7 +20,7 @@ const THEMES = new Set(["pembe-seker", "sakiz", "lavanta", "tropik", "mandalina"
 const ALL_VIEW_KEYS = Object.keys(VIEWS);
 const DEFAULT_STAFF_VIEWS = ALL_VIEW_KEYS.filter((key) => key !== "ayarlar");
 const VEHICLE_URL = "/modules/arac-kabul/index.html?embed=kasa";
-const PAYROLL_URL = "/modules/avans-maas-v2312/index.html?embed=kasa&v=2.3.13";
+const PAYROLL_URL = "/modules/avans-maas-v2314/index.html?embed=kasa&v=2.3.14";
 
 const frame = document.getElementById("moduleFrame");
 const viewport = document.getElementById("moduleViewport");
