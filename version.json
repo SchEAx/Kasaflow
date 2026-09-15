@@ -1,4 +1,4 @@
 {
-  "version": "2.3.11",
-  "build": "KASAFLOW-PAYROLL-COMMIT-GUARD-FIX"
+  "version": "2.3.12",
+  "build": "KASAFLOW-PAYROLL-PERSISTENT-PAID-MARKER-FIX"
 }

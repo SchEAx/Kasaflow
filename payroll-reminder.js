@@ -7,6 +7,37 @@
     const match = String(value || "").trim().match(/^(\d{4}-\d{2}-\d{2})/);
     return match ? match[1] : "";
   };
+  const PAID_MARKERS_KEY = "kasaflow_salary_paid_markers_v1";
+  const PAID_MARKER_MAX_AGE_MS = 120 * 24 * 60 * 60 * 1000;
+  const normalizeName = (value) => String(value || "").trim().toLocaleLowerCase("tr-TR").replace(/\s+/g, " ");
+
+  function readPaidMarkers() {
+    try {
+      const rows = JSON.parse(localStorage.getItem(PAID_MARKERS_KEY) || "[]");
+      if (!Array.isArray(rows)) return [];
+      const cutoff = Date.now() - PAID_MARKER_MAX_AGE_MS;
+      return rows.filter((row) => Number(row?.committed_at || 0) >= cutoff && row?.period_key);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function markerPeriodKey(person, period) {
+    const normalized = dateOnly(period);
+    return (person?.pay_type || "monthly") === "weekly" ? normalized : normalized.slice(0, 7);
+  }
+
+  function locallyPaid(person, period) {
+    const periodKey = markerPeriodKey(person, period);
+    const personId = String(person?.id ?? "");
+    const personName = normalizeName(person?.name || "");
+    const payType = (person?.pay_type || "monthly") === "weekly" ? "weekly" : "monthly";
+    return readPaidMarkers().some((row) => {
+      if (String(row.period_key) !== String(periodKey) || String(row.pay_type || "monthly") !== payType) return false;
+      if (personId && String(row.person_id || "") === personId) return true;
+      return Boolean(personName && normalizeName(row.person_name) === personName);
+    });
+  }
   let activeNotification = null;
 
   async function closePayrollNotifications() {
@@ -40,8 +71,12 @@
   async function fetchPayroll() {
     const jwt = token();
     if (!jwt) return null;
-    const response = await fetch(`${API_BASE}/api/kasaflow/payroll`, {
-      headers: { Authorization: `Bearer ${jwt}` },
+    const response = await fetch(`${API_BASE}/api/kasaflow/payroll?_=${Date.now()}`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache"
+      },
       cache: "no-store"
     });
     if (!response.ok) return null;
@@ -81,6 +116,7 @@
     const payments = payload.salary_payments || [];
 
     function paymentExists(person, period) {
+      if (locallyPaid(person, period)) return true;
       return payments.some((row) => {
         if (String(row.person_id) !== String(person.id)) return false;
         const paidPeriod = String(row.pay_period || "").slice(0, 10);
