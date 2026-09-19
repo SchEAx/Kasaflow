@@ -2,13 +2,15 @@ const MIGRATION_TEST_MODE = true;
 const MIGRATION_API_BASE = "https://api.scheax.com.tr/migration-test";
 const MIGRATION_TOKEN_KEY = "garage_migration_test_jwt_v1";
 
-const KASAFLOW_APP_VERSION = "2.3.17";
+const KASAFLOW_APP_VERSION = "2.3.18";
 const KASAFLOW_VERSION_KEY = "kasaflow_app_version";
 
 
 const VIEWS = {
   "hizli-kayit": { title: "Hızlı Kayıt", kind: "vehicle", tab: "hizliKayit" },
+  "detayli-kayit": { title: "Detaylı Kayıt", kind: "vehicle", tab: "kayit" },
   kayitlar: { title: "Kayıtlar", kind: "vehicle", tab: "liste" },
+  "montaj-kontrol": { title: "Montaj Kontrol", kind: "vehicle", tab: "kontrol" },
   "gun-sonu": { title: "Gün Sonu", kind: "vehicle", tab: "gunSonu" },
   siparis: { title: "Sipariş", kind: "vehicle", tab: "siparis" },
   garanti: { title: "Garanti", kind: "vehicle", tab: "garanti" },
@@ -19,8 +21,8 @@ const VIEWS = {
 const THEMES = new Set(["pembe-seker", "sakiz", "lavanta", "tropik", "mandalina", "gece-pembe"]);
 const ALL_VIEW_KEYS = Object.keys(VIEWS);
 const DEFAULT_STAFF_VIEWS = ALL_VIEW_KEYS.filter((key) => key !== "ayarlar");
-const VEHICLE_URL = "/modules/kasaflow-module.html?mode=vehicle&embed=kasa&v=2.3.17";
-const PAYROLL_URL = "/modules/kasaflow-module.html?mode=payroll&embed=kasa&v=2.3.17";
+const VEHICLE_URL = "/modules/kasaflow-module.html?mode=vehicle&embed=kasa&v=2.3.18";
+const PAYROLL_URL = "/modules/kasaflow-module.html?mode=payroll&embed=kasa&v=2.3.18";
 
 const frame = document.getElementById("moduleFrame");
 const viewport = document.getElementById("moduleViewport");
@@ -692,6 +694,18 @@ async function closeVisiblePayrollNotifications() {
 window.addEventListener("message", (event) => {
   if (event.origin !== location.origin || !event.data) return;
   if (event.data.type === "kasaflow:ready") sendVehicleTab();
+  if (event.data.type === "kasaflow:vehicle-tab") {
+    const requestedTab = String(event.data.tab || "");
+    const matchingView = ALL_VIEW_KEYS.find((key) => VIEWS[key]?.kind === "vehicle" && VIEWS[key]?.tab === requestedTab);
+    if (matchingView && canOpenView(matchingView)) {
+      activeView = matchingView;
+      pendingVehicleTab = requestedTab;
+      title.textContent = VIEWS[matchingView].title;
+      setActiveButton(matchingView);
+      history.replaceState(null, "", `#${matchingView}`);
+      localStorage.setItem("kasaflow_active_view", matchingView);
+    }
+  }
   if (event.data.type === "garageflow:toast" && event.data.message) showToast(event.data.message);
   if (event.data.type === "garageflow:payroll-due") {
     const count = Number(event.data.count || 0);

@@ -8,8 +8,8 @@
   <script>document.documentElement.dataset.kasaTheme = localStorage.getItem("kasaflow_theme") || "pembe-seker";</script>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/logo.png" />
-  <link rel="stylesheet" href="/cashier-themes.css?v=2.3.17" />
-  <link rel="stylesheet" href="/style.css?v=2.3.17" />
+  <link rel="stylesheet" href="/cashier-themes.css?v=2.3.18" />
+  <link rel="stylesheet" href="/style.css?v=2.3.18" />
 </head>
 <body>
   <div style="position:fixed;left:10px;bottom:10px;z-index:999999;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 10px;font:800 10px Arial;letter-spacing:.04em;pointer-events:none">MIGRATION TEST · PostgreSQL/JWT</div>
@@ -36,7 +36,9 @@
 
       <nav class="module-nav" aria-label="KasaFlow bölümleri">
         <button class="module-button active" data-view="hizli-kayit"><span>⚡</span><b>Hızlı Kayıt</b></button>
+        <button class="module-button" data-view="detayli-kayit"><span>📝</span><b>Detaylı Kayıt</b></button>
         <button class="module-button" data-view="kayitlar"><span>📋</span><b>Kayıtlar</b></button>
+        <button class="module-button" data-view="montaj-kontrol"><span>🔧</span><b>Montaj Kontrol</b></button>
         <button class="module-button" data-view="gun-sonu"><span>📊</span><b>Gün Sonu</b></button>
         <button class="module-button" data-view="siparis"><span>🛍️</span><b>Sipariş</b></button>
         <button class="module-button" data-view="garanti"><span>🛡️</span><b>Garanti</b></button>
@@ -45,7 +47,7 @@
         <button class="module-button" data-view="ayarlar"><span>🎨</span><b>Ayarlar</b></button>
       </nav>
 
-      <div class="sidebar-footer"><span id="appVersionLabel">KasaFlow Migration 2.3.17</span><small>Garage İstanbul · SchEAx & GPT</small></div>
+      <div class="sidebar-footer"><span id="appVersionLabel">KasaFlow Migration 2.3.18</span><small>Garage İstanbul · SchEAx & GPT</small></div>
     </aside>
 
     <main class="workspace">
@@ -106,7 +108,7 @@
   </div>
 
   <div id="toast" class="toast" aria-live="polite"></div>
-  <script src="/payroll-reminder.js?v=2.3.17"></script>
-  <script src="/app-migration-v2.3.js?v=2.3.17"></script>
+  <script src="/payroll-reminder.js?v=2.3.18"></script>
+  <script src="/app-migration-v2.3.js?v=2.3.18"></script>
 </body>
 </html>

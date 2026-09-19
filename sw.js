@@ -1,5 +1,5 @@
-const CACHE_NAME = "kasaflow-migration-test-v2-3-17";
-const SHELL_ASSETS = ["/", "/index.html", "/style.css?v=2.3.17", "/cashier-themes.css?v=2.3.17", "/app-migration-v2.3.js?v=2.3.17", "/payroll-reminder.js?v=2.3.17", "/manifest.webmanifest", "/logo.png", "/icons/icon-192.png", "/icons/icon-512.png", "/modules/kasaflow-module.html?v=2.3.17"];
+const CACHE_NAME = "kasaflow-migration-test-v2-3-18";
+const SHELL_ASSETS = ["/", "/index.html", "/style.css?v=2.3.18", "/cashier-themes.css?v=2.3.18", "/app-migration-v2.3.js?v=2.3.18", "/payroll-reminder.js?v=2.3.18", "/manifest.webmanifest", "/logo.png", "/icons/icon-192.png", "/icons/icon-512.png", "/modules/kasaflow-module.html?v=2.3.18"];
 self.addEventListener("install", event => event.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(SHELL_ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", event => {
