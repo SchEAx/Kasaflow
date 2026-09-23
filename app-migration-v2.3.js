@@ -2,7 +2,7 @@ const MIGRATION_TEST_MODE = true;
 const MIGRATION_API_BASE = "https://api.scheax.com.tr/migration-test";
 const MIGRATION_TOKEN_KEY = "garage_migration_test_jwt_v1";
 
-const KASAFLOW_APP_VERSION = "2.3.19";
+const KASAFLOW_APP_VERSION = "2.3.21";
 const KASAFLOW_VERSION_KEY = "kasaflow_app_version";
 
 
@@ -21,8 +21,8 @@ const VIEWS = {
 const THEMES = new Set(["pembe-seker", "sakiz", "lavanta", "tropik", "mandalina", "gece-pembe"]);
 const ALL_VIEW_KEYS = Object.keys(VIEWS);
 const DEFAULT_STAFF_VIEWS = ALL_VIEW_KEYS.filter((key) => key !== "ayarlar");
-const VEHICLE_URL = "/modules/kasaflow-module.html?mode=vehicle&embed=kasa&v=2.3.19";
-const PAYROLL_URL = "/modules/kasaflow-module.html?mode=payroll&embed=kasa&v=2.3.19";
+const VEHICLE_URL = "/modules/kasaflow-module.html?mode=vehicle&embed=kasa&v=2.3.21";
+const PAYROLL_URL = "/modules/kasaflow-module.html?mode=payroll&embed=kasa&v=2.3.21";
 
 const frame = document.getElementById("moduleFrame");
 const viewport = document.getElementById("moduleViewport");
@@ -251,6 +251,8 @@ function enterApp(profile) {
 }
 async function initializeAuth() {
   try {
+    const hubToken = await window.GarageHubSSO?.waitForToken();
+    if (hubToken) setMigrationToken(hubToken);
     if (!migrationToken()) return showLogin();
     enterApp(await loadGlobalProfile());
   } catch (error) {
